@@ -338,6 +338,7 @@ export default function Dashboard() {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Patient</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pregnancy</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Risk Level</th>
+                      {isAdmin && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Assigned Doctor</th>}
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Village</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Last Checkup</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
@@ -367,6 +368,7 @@ export default function Dashboard() {
                           <td className="px-6 py-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getRiskColor(patient.risk_level)}`}>{patient.risk_level.toUpperCase()}</span>
                           </td>
+                          {isAdmin && <td className="px-6 py-4 text-gray-900">{patient.assigned_doctor}</td>}
                           <td className="px-6 py-4 text-gray-900">{patient.village}</td>
                           <td className="px-6 py-4 text-gray-900">{patient.last_checkup ? new Date(patient.last_checkup).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}</td>
                           <td className="px-6 py-4">
