@@ -245,3 +245,100 @@ Supabase URL: https://hnlljiscqaolhmtjvhry.supabase.co
 ## Contact
 - Email: hello@garbhasuraksha.com
 - Admins: akshayhazari@garbhasuraksha.com, romio.maurya@garbhasuraksha.com
+
+---
+
+## EC2 Deployment Guide (Backend API)
+
+### 1. Create EC2 Instance (AWS Console)
+- AMI: Ubuntu 22.04 LTS
+- Instance type: t2.micro (free tier) or t2.small
+- Security Group: Allow ports 22 (SSH), 80 (HTTP), 443 (HTTPS)
+- Key pair: Create/download .pem file
+
+### 2. Connect & Deploy
+```bash
+# SSH into EC2
+ssh -i your-key.pem ubuntu@<EC2-PUBLIC-IP>
+
+# Install dependencies
+sudo apt update && sudo apt install -y python3-pip python3-venv nginx certbot python3-certbot-nginx git
+
+# Clone repo
+git clone https://github.com/garbhasuraksha/garbha-raksha-core.git
+cd garbha-raksha-core
+
+# Setup Python
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Create .env
+cat > .env << 'EOF'
+SUPABASE_URL=https://hnlljiscqaolhmtjvhry.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhubGxqaXNjcWFvbGhtdGp2aHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNTcyMDgsImV4cCI6MjA5NDczMzIwOH0.m2o-YVzUGyX96oHpCcweGD6MaAPg9HkDn_K24u9pMH8
+CORS_ORIGINS=https://app.garbhasuraksha.com,https://garbhasuraksha.com
+EOF
+
+# Run with gunicorn
+pip install gunicorn
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --daemon
+```
+
+### 3. Nginx Config
+```bash
+sudo nano /etc/nginx/sites-available/api
+```
+
+Paste:
+```nginx
+server {
+    listen 80;
+    server_name api.garbhasuraksha.com;
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Enable:
+```bash
+sudo ln -s /etc/nginx/sites-available/api /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl restart nginx
+
+# SSL (after DNS setup)
+sudo certbot --nginx -d api.garbhasuraksha.com
+```
+
+### 4. DNS in Cloudflare
+- Type: A
+- Name: api
+- Value: <EC2-PUBLIC-IP>
+- Proxy: DNS only (gray cloud)
+
+### 5. Test API
+- http://api.garbhasuraksha.com/docs (Swagger UI)
+- http://api.garbhasuraksha.com/health
+
+---
+
+## Next Session Prompt
+
+```
+I'm working on Garbha Suraksha maternal healthcare app.
+
+Read context file first: ~/Repos/Garbha-Raksha/PROJECT-CONTEXT.md
+
+Current tasks:
+1. Deploy FastAPI backend to EC2 (guide in context file)
+2. Run SQL to create tables in Supabase
+3. Build patient onboarding form
+4. Build daily vitals form for ASHA workers
+5. Replace static data with real Supabase queries
+
+Repos:
+- App: ~/Repos/Garbha-Raksha/garbha-suraksha-app
+- Backend: ~/Repos/Garbha-Raksha/garbha-raksha-core
+```
