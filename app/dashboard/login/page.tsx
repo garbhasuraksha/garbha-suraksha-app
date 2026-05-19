@@ -35,18 +35,17 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      // Store role in localStorage for demo
-      localStorage.setItem('userRole', selectedRole);
+      // Store user info
+      if (data.user) {
+        localStorage.setItem('userRole', selectedRole);
+        localStorage.setItem('userEmail', data.user.email || '');
+        localStorage.setItem('userId', data.user.id);
+      }
+
       router.push('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
-      setError(error.message || 'Invalid credentials');
-
-      // For demo purposes, allow any login
-      if (email && password) {
-        localStorage.setItem('userRole', selectedRole);
-        router.push('/dashboard');
-      }
+      setError(error.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -179,15 +178,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-center text-sm text-gray-600 mb-2">
-              Demo credentials for testing:
+            <p className="text-center text-sm text-gray-500">
+              Contact admin for login credentials
             </p>
-            <div className="space-y-1 text-xs text-gray-500 text-center">
-              <p>Doctor: doctor@demo.com</p>
-              <p>ASHA: asha@demo.com</p>
-              <p>Admin: admin@demo.com</p>
-              <p className="text-gray-400">Password: demo123 (any password works)</p>
-            </div>
           </div>
         </div>
 
