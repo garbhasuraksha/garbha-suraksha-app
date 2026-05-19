@@ -9,9 +9,11 @@ export default function Home() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4">
-            <Heart className="w-10 h-10 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Garbha Suraksha"
+            className="w-24 h-24 object-contain mx-auto mb-4"
+          />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Garbha Suraksha</h1>
           <p className="text-gray-600">Smart Maternal Care Companion</p>
         </div>
