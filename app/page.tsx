@@ -6,7 +6,7 @@ import { Stethoscope, User, Heart } from 'lucide-react';
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-pink-100 ring-4 ring-pink-200/50 ring-offset-4 ring-offset-pink-50">
         {/* Logo */}
         <div className="text-center mb-10">
           <img
