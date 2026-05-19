@@ -1,0 +1,209 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
+import { Stethoscope, Users, Shield } from 'lucide-react';
+
+type Role = 'doctor' | 'asha' | 'admin';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<Role>('doctor');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const roles = [
+    { id: 'doctor' as Role, label: 'Doctor', icon: Stethoscope, color: 'pink' },
+    { id: 'asha' as Role, label: 'ASHA Worker', icon: Users, color: 'blue' },
+    { id: 'admin' as Role, label: 'Admin', icon: Shield, color: 'purple' },
+  ];
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Store role in localStorage for demo
+      localStorage.setItem('userRole', selectedRole);
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.message || 'Invalid credentials');
+
+      // For demo purposes, allow any login
+      if (email && password) {
+        localStorage.setItem('userRole', selectedRole);
+        router.push('/dashboard');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex flex-col items-center gap-3 mb-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-white text-3xl">💝</span>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Garbha Suraksha</h1>
+              <p className="text-gray-600">Healthcare Portal</p>
+            </div>
+          </Link>
+        </div>
+
+        {/* Login Form */}
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-8">
+          {/* Role Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Login as
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {roles.map((role) => {
+                const Icon = role.icon;
+                const isSelected = selectedRole === role.id;
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => setSelectedRole(role.id)}
+                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      isSelected
+                        ? role.color === 'pink'
+                          ? 'border-pink-500 bg-pink-50 text-pink-700'
+                          : role.color === 'blue'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-purple-500 bg-purple-50 text-purple-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-xs font-medium">{role.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 mb-6">
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder={
+                  selectedRole === 'doctor' ? 'doctor@example.com' :
+                  selectedRole === 'asha' ? 'asha@example.com' :
+                  'admin@example.com'
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Enter your password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+                />
+                <span className="ml-2 text-sm text-gray-600">Remember me</span>
+              </label>
+              <a href="#" className="text-sm text-pink-600 hover:text-pink-700 font-medium">
+                Forgot password?
+              </a>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 rounded-xl transition-all font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-white ${
+                selectedRole === 'doctor'
+                  ? 'bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700'
+                  : selectedRole === 'asha'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                  : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700'
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Signing in...
+                </span>
+              ) : (
+                `Sign In as ${roles.find(r => r.id === selectedRole)?.label}`
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm text-gray-600 mb-2">
+              Demo credentials for testing:
+            </p>
+            <div className="space-y-1 text-xs text-gray-500 text-center">
+              <p>Doctor: doctor@demo.com</p>
+              <p>ASHA: asha@demo.com</p>
+              <p>Admin: admin@demo.com</p>
+              <p className="text-gray-400">Password: demo123 (any password works)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Links */}
+        <div className="mt-6 text-center space-y-3">
+          <Link
+            href="/patient/login"
+            className="block text-sm text-pink-600 hover:text-pink-700 font-medium"
+          >
+            Are you a Patient? Login here →
+          </Link>
+          <Link href="/" className="block text-sm text-gray-600 hover:text-gray-900">
+            ← Back to Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
