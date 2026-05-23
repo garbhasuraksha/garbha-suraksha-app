@@ -72,29 +72,30 @@ export default function LoginPage() {
               Login as
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {roles.map((role) => {
-                const Icon = role.icon;
-                const isSelected = selectedRole === role.id;
-                return (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => setSelectedRole(role.id)}
-                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                      isSelected
-                        ? role.color === 'pink'
-                          ? 'border-pink-500 bg-pink-50 text-pink-700'
-                          : role.color === 'blue'
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-purple-500 bg-purple-50 text-purple-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-xs font-medium">{role.label}</span>
-                  </button>
-                );
-              })}
+              <button
+                type="button"
+                onClick={() => setSelectedRole('doctor')}
+                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                  selectedRole === 'doctor'
+                    ? 'border-pink-500 bg-pink-50 text-pink-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                }`}
+              >
+                <Stethoscope className="w-6 h-6" />
+                <span className="text-sm font-medium">Doctor</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRole('admin')}
+                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                  selectedRole === 'admin'
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                }`}
+              >
+                <Shield className="w-6 h-6" />
+                <span className="text-sm font-medium">Admin</span>
+              </button>
             </div>
           </div>
 
