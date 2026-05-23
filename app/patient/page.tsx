@@ -89,6 +89,7 @@ export default function PatientPortal() {
           patient_id: '1',
           doctor_id: 'doc1',
           scheduled_at: '2026-05-20T15:00:00Z',
+          consultation_type: 'video',
           status: 'scheduled',
           meeting_link: 'https://zoom.us/j/1234567890',
           notes: '',
