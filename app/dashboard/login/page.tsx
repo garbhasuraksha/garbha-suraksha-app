@@ -56,9 +56,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex flex-col items-center gap-3 mb-2">
-            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white text-3xl">💝</span>
-            </div>
+            <img src="/logo.png" alt="Garbha Suraksha" className="w-20 h-20 object-contain" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Garbha Suraksha</h1>
               <p className="text-gray-600">Healthcare Portal</p>
