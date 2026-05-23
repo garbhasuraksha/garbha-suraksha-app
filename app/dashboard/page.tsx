@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase, Patient } from '@/lib/supabase';
+import { supabase, Patient, Doctor, getPatients, getDoctors, getDashboardStats } from '@/lib/supabase';
 import {
   Users,
   AlertTriangle,
   CheckCircle,
-  Calendar,
   Plus,
   Search,
   Video,
@@ -15,19 +14,11 @@ import {
   Stethoscope,
   Settings,
   LogOut,
-  UserCog
+  Bell,
+  RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
-interface Doctor {
-  id: string;
-  name: string;
-  email: string;
-  specialization: string;
-  patients_count: number;
-  status: 'active' | 'inactive';
-}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -37,68 +28,72 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'patients' | 'doctors' | 'settings'>('patients');
   const [stats, setStats] = useState({
-    total: 0,
-    highRisk: 0,
+    totalPatients: 0,
+    highRiskPatients: 0,
     dueThisWeek: 0,
     consultationsToday: 0,
     totalDoctors: 0,
-    totalAshaWorkers: 0
+    unacknowledgedAlerts: 0
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRisk, setFilterRisk] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const role = localStorage.getItem('userRole') || 'doctor';
-    const email = localStorage.getItem('userEmail') || '';
-    setUserRole(role);
-    setUserEmail(email);
-    fetchPatients();
-    if (role === 'admin') {
-      fetchDoctors();
-    }
+    checkAuthAndLoadData();
   }, []);
 
-  const fetchDoctors = async () => {
-    // Sample doctors data
-    const sampleDoctors: Doctor[] = [
-      { id: '1', name: 'Dr. Anjali Mehta', email: 'anjali@garbhasuraksha.com', specialization: 'Gynecologist', patients_count: 24, status: 'active' },
-      { id: '2', name: 'Dr. Rajesh Kumar', email: 'rajesh@garbhasuraksha.com', specialization: 'Obstetrician', patients_count: 18, status: 'active' },
-      { id: '3', name: 'Dr. Priya Sharma', email: 'priya@garbhasuraksha.com', specialization: 'Gynecologist', patients_count: 12, status: 'active' },
-    ];
-    setDoctors(sampleDoctors);
-    setStats(prev => ({ ...prev, totalDoctors: 3, totalAshaWorkers: 8 }));
+  const checkAuthAndLoadData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/dashboard/login');
+        return;
+      }
+
+      const role = localStorage.getItem('userRole') || 'doctor';
+      const email = session.user.email || '';
+      setUserRole(role);
+      setUserEmail(email);
+
+      await loadDashboardData(role);
+    } catch (err) {
+      console.error('Auth check failed:', err);
+      router.push('/dashboard/login');
+    }
   };
 
-  const fetchPatients = async () => {
+  const loadDashboardData = async (role: string) => {
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [statsData, patientsRes] = await Promise.all([
+        getDashboardStats(),
+        getPatients()
+      ]);
 
-      if (error) throw error;
+      setStats({
+        totalPatients: statsData.totalPatients,
+        highRiskPatients: statsData.highRiskPatients,
+        dueThisWeek: statsData.dueThisWeek,
+        consultationsToday: statsData.consultationsToday,
+        totalDoctors: statsData.totalDoctors,
+        unacknowledgedAlerts: statsData.unacknowledgedAlerts
+      });
 
-      const patientData = data || [];
-      setPatients(patientData);
-      setStats(prev => ({
-        ...prev,
-        total: patientData.length,
-        highRisk: patientData.filter((p: Patient) => p.risk_level === 'high').length,
-        dueThisWeek: patientData.filter((p: Patient) => p.pregnancy_week >= 37).length,
-        consultationsToday: 2
-      }));
-    } catch (error) {
-      console.error('Error fetching patients:', error);
-      const samplePatients: Patient[] = [
-        { id: '1', name: 'Priya Sharma', age: 26, pregnancy_week: 24, village: 'Rampur', risk_level: 'low', assigned_doctor: 'Dr. Anjali Mehta', phone: '+91 98765 43210', created_at: new Date().toISOString(), last_checkup: '2026-05-15' },
-        { id: '2', name: 'Sunita Devi', age: 32, pregnancy_week: 16, village: 'Shivpur', risk_level: 'high', assigned_doctor: 'Dr. Anjali Mehta', phone: '+91 98765 43211', created_at: new Date().toISOString(), last_checkup: '2026-05-10' },
-        { id: '3', name: 'Meera Patel', age: 28, pregnancy_week: 32, village: 'Laxmipur', risk_level: 'medium', assigned_doctor: 'Dr. Rajesh Kumar', phone: '+91 98765 43212', created_at: new Date().toISOString(), last_checkup: '2026-05-12' },
-        { id: '4', name: 'Kavita Singh', age: 24, pregnancy_week: 38, village: 'Rampur', risk_level: 'low', assigned_doctor: 'Dr. Anjali Mehta', phone: '+91 98765 43213', created_at: new Date().toISOString(), last_checkup: '2026-05-17' }
-      ];
-      setPatients(samplePatients);
-      setStats(prev => ({ ...prev, total: 4, highRisk: 1, dueThisWeek: 1, consultationsToday: 2 }));
+      if (patientsRes.error) throw patientsRes.error;
+      setPatients(patientsRes.data || []);
+
+      if (role === 'admin') {
+        const doctorsRes = await getDoctors();
+        if (!doctorsRes.error) setDoctors(doctorsRes.data || []);
+      }
+    } catch (err: any) {
+      console.error('Error loading dashboard:', err);
+      setError(err.message || 'Failed to load dashboard data. Please ensure the database tables are set up.');
     } finally {
       setLoading(false);
     }
@@ -108,6 +103,10 @@ export default function Dashboard() {
     await supabase.auth.signOut();
     localStorage.clear();
     router.push('/dashboard/login');
+  };
+
+  const handleRefresh = () => {
+    loadDashboardData(userRole);
   };
 
   const filteredPatients = patients.filter(patient => {
@@ -127,7 +126,12 @@ export default function Dashboard() {
   };
 
   const getRiskDot = (risk: string) => {
-    switch (risk) { case 'high': return 'bg-red-500'; case 'medium': return 'bg-yellow-500'; case 'low': return 'bg-green-500'; default: return 'bg-gray-500'; }
+    switch (risk) {
+      case 'high': return 'bg-red-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
   };
 
   const getTrimester = (week: number) => {
@@ -136,8 +140,28 @@ export default function Dashboard() {
     return '3rd Trimester';
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'verified': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const isAdmin = userRole === 'admin';
-  const displayName = isAdmin ? 'Admin' : userRole === 'asha' ? 'ASHA Worker' : 'Dr. Anjali Mehta';
+  const displayName = isAdmin ? 'Admin' : 'Doctor';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-blue-50">
@@ -153,10 +177,20 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button className="text-gray-600 hover:text-gray-900"><span className="text-2xl">🔔</span></button>
+              <button onClick={handleRefresh} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg" title="Refresh">
+                <RefreshCw className="w-5 h-5" />
+              </button>
+              {stats.unacknowledgedAlerts > 0 && (
+                <button className="relative p-2 text-gray-600 hover:text-gray-900">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {stats.unacknowledgedAlerts}
+                  </span>
+                </button>
+              )}
               <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
                 <div className={`w-8 h-8 ${isAdmin ? 'bg-purple-500' : 'bg-pink-500'} rounded-full flex items-center justify-center text-white font-semibold text-sm`}>
-                  {isAdmin ? 'A' : 'AM'}
+                  {displayName[0]}
                 </div>
                 <span className="text-sm font-medium">{displayName}</span>
               </div>
@@ -169,6 +203,23 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-800">Database Error</p>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <p className="text-sm text-red-600 mt-2">
+                  Make sure the database tables are created in Supabase.
+                  Run the SQL schema from <code className="bg-red-100 px-1 rounded">garbha-raksha-core/database/schema.sql</code>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Admin Tabs */}
         {isAdmin && (
           <div className="mb-6 flex gap-2 bg-white rounded-xl p-2 shadow-sm border border-gray-100 w-fit">
@@ -185,18 +236,18 @@ export default function Dashboard() {
         )}
 
         {/* Stats Grid */}
-        <div className={`grid grid-cols-1 gap-6 mb-8 ${isAdmin ? 'md:grid-cols-6' : 'md:grid-cols-4'}`}>
+        <div className={`grid grid-cols-1 gap-6 mb-8 ${isAdmin ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <Users className="w-8 h-8 text-blue-500" />
-              <span className="text-3xl font-bold text-gray-900">{stats.total}</span>
+              <span className="text-3xl font-bold text-gray-900">{stats.totalPatients}</span>
             </div>
             <p className="text-gray-600 text-sm">Total Patients</p>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <AlertTriangle className="w-8 h-8 text-red-500" />
-              <span className="text-3xl font-bold text-gray-900">{stats.highRisk}</span>
+              <span className="text-3xl font-bold text-gray-900">{stats.highRiskPatients}</span>
             </div>
             <p className="text-gray-600 text-sm">High Risk</p>
           </div>
@@ -215,22 +266,13 @@ export default function Dashboard() {
             <p className="text-gray-600 text-sm">Consultations Today</p>
           </div>
           {isAdmin && (
-            <>
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <Stethoscope className="w-8 h-8 text-pink-500" />
-                  <span className="text-3xl font-bold text-gray-900">{stats.totalDoctors}</span>
-                </div>
-                <p className="text-gray-600 text-sm">Doctors</p>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <Stethoscope className="w-8 h-8 text-pink-500" />
+                <span className="text-3xl font-bold text-gray-900">{stats.totalDoctors}</span>
               </div>
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <UserCog className="w-8 h-8 text-indigo-500" />
-                  <span className="text-3xl font-bold text-gray-900">{stats.totalAshaWorkers}</span>
-                </div>
-                <p className="text-gray-600 text-sm">ASHA Workers</p>
-              </div>
-            </>
+              <p className="text-gray-600 text-sm">Doctors</p>
+            </div>
           )}
         </div>
 
@@ -238,48 +280,60 @@ export default function Dashboard() {
         {isAdmin && activeTab === 'doctors' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-900">Registered Doctors</h2>
-              <button className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900">Registered Doctors ({doctors.length})</h2>
+              <Link href="/dashboard/doctors/new" className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all flex items-center gap-2">
                 <Plus className="w-5 h-5" />Add Doctor
-              </button>
+              </Link>
             </div>
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Doctor</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Specialization</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Patients</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {doctors.map((doctor) => (
-                  <tr key={doctor.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
-                          <Stethoscope className="w-5 h-5 text-pink-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{doctor.name}</p>
-                          <p className="text-sm text-gray-500">{doctor.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-900">{doctor.specialization}</td>
-                    <td className="px-6 py-4 text-gray-900">{doctor.patients_count} patients</td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button className="text-blue-600 hover:text-blue-800 mr-3">Edit</button>
-                      <button className="text-red-600 hover:text-red-800">Remove</button>
-                    </td>
+            {doctors.length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <Stethoscope className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No doctors registered yet.</p>
+                <p className="text-sm mt-2">Add your first doctor to get started.</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Doctor</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Specialization</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">License</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {doctors.map((doctor) => (
+                    <tr key={doctor.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+                            <Stethoscope className="w-5 h-5 text-pink-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{doctor.name}</p>
+                            <p className="text-sm text-gray-500">{doctor.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-900">{doctor.specialization}</td>
+                      <td className="px-6 py-4 text-gray-600 text-sm">{doctor.medical_license_number}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadge(doctor.status)}`}>
+                          {doctor.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link href={`/dashboard/doctors/${doctor.id}`} className="text-blue-600 hover:text-blue-800 mr-3">View</Link>
+                        {doctor.status === 'pending' && (
+                          <button className="text-green-600 hover:text-green-800">Verify</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
 
@@ -345,10 +399,16 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {loading ? (
-                      <tr><td colSpan={6} className="px-6 py-12 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto"></div></td></tr>
-                    ) : filteredPatients.length === 0 ? (
-                      <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No patients found.</td></tr>
+                    {filteredPatients.length === 0 ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 7 : 6} className="px-6 py-12 text-center">
+                          <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                          <p className="text-gray-500">No patients found.</p>
+                          <p className="text-sm text-gray-400 mt-2">
+                            {patients.length === 0 ? 'Add your first patient to get started.' : 'Try adjusting your search or filters.'}
+                          </p>
+                        </td>
+                      </tr>
                     ) : (
                       filteredPatients.map((patient) => (
                         <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
@@ -391,3 +451,41 @@ export default function Dashboard() {
     </div>
   );
 }
+
+/*
+ * ASHA WORKER FEATURE - FUTURE IMPLEMENTATION
+ * Uncomment when public-private partnership is established
+ *
+ * Add to imports:
+ * import { AshaWorker, getAshaWorkers } from '@/lib/supabase';
+ * import { UserCog } from 'lucide-react';
+ *
+ * Add to state:
+ * const [ashaWorkers, setAshaWorkers] = useState<AshaWorker[]>([]);
+ *
+ * Add to activeTab type:
+ * 'patients' | 'doctors' | 'asha' | 'settings'
+ *
+ * Add to stats:
+ * totalAshaWorkers: 0,
+ *
+ * Add to loadDashboardData:
+ * const ashaRes = await getAshaWorkers();
+ * if (!ashaRes.error) setAshaWorkers(ashaRes.data || []);
+ *
+ * Add ASHA tab button after Doctors tab:
+ * <button onClick={() => setActiveTab('asha')} className={`px-6 py-2 rounded-lg font-medium transition-all ${activeTab === 'asha' ? 'bg-pink-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+ *   <UserCog className="w-4 h-4 inline mr-2" />ASHA Workers
+ * </button>
+ *
+ * Add ASHA stats card:
+ * <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+ *   <div className="flex items-center justify-between mb-2">
+ *     <UserCog className="w-8 h-8 text-indigo-500" />
+ *     <span className="text-3xl font-bold text-gray-900">{stats.totalAshaWorkers}</span>
+ *   </div>
+ *   <p className="text-gray-600 text-sm">ASHA Workers</p>
+ * </div>
+ *
+ * Add ASHA Workers tab content (full table implementation in git history)
+ */
