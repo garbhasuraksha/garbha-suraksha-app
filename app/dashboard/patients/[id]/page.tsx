@@ -93,7 +93,7 @@ export default function PatientDetail() {
           doctor_id: 'doc1',
           scheduled_at: '2026-05-20T15:00:00Z',
           status: 'scheduled',
-          zoom_link: 'https://zoom.us/j/1234567890',
+          meeting_link: 'https://zoom.us/j/1234567890',
           notes: '',
           created_at: '2026-05-15T10:00:00Z'
         },
@@ -415,9 +415,9 @@ export default function PatientDetail() {
                           {consultation.status.toUpperCase()}
                         </span>
                       </div>
-                      {consultation.status === 'scheduled' && consultation.zoom_link && (
+                      {consultation.status === 'scheduled' && consultation.meeting_link && (
                         <a
-                          href={consultation.zoom_link}
+                          href={consultation.meeting_link}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2"

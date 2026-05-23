@@ -90,7 +90,7 @@ export default function PatientPortal() {
           doctor_id: 'doc1',
           scheduled_at: '2026-05-20T15:00:00Z',
           status: 'scheduled',
-          zoom_link: 'https://zoom.us/j/1234567890',
+          meeting_link: 'https://zoom.us/j/1234567890',
           notes: '',
           created_at: '2026-05-15T10:00:00Z'
         }
@@ -296,7 +296,7 @@ export default function PatientPortal() {
                   })} with {patient.assigned_doctor}
                 </p>
                 <a
-                  href={upcomingConsultation.zoom_link || '#'}
+                  href={upcomingConsultation.meeting_link || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-white text-pink-600 px-6 py-3 rounded-xl font-semibold hover:bg-pink-50 transition-colors"
