@@ -86,8 +86,8 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedRole('admin')}
-                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                onClick={() => { console.log('Admin clicked'); setSelectedRole('admin'); }}
+                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 cursor-pointer ${
                   selectedRole === 'admin'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-200 hover:border-gray-300 text-gray-600'
