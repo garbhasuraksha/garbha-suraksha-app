@@ -46,7 +46,7 @@ export default function Home() {
               </div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-gray-900">Healthcare Provider</h2>
-                <p className="text-gray-600 text-sm">Doctor, ASHA Worker, or Admin</p>
+                <p className="text-gray-600 text-sm">Doctor or Admin</p>
               </div>
               <span className="text-blue-500 text-2xl">→</span>
             </div>

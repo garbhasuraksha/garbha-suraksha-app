@@ -173,7 +173,7 @@ export default function PatientLoginPage() {
             href="/dashboard/login"
             className="block text-sm text-gray-600 hover:text-pink-600"
           >
-            Are you a Doctor or ASHA Worker? →
+            Are you a Healthcare Provider? →
           </Link>
           <Link href="/" className="block text-sm text-gray-600 hover:text-gray-900">
             ← Back to Home
