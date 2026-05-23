@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { Stethoscope, Users, Shield } from 'lucide-react';
+import { Stethoscope, Shield } from 'lucide-react';
 
-type Role = 'doctor' | 'asha' | 'admin';
+type Role = 'doctor' | 'admin';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,7 +18,6 @@ export default function LoginPage() {
 
   const roles = [
     { id: 'doctor' as Role, label: 'Doctor', icon: Stethoscope, color: 'pink' },
-    { id: 'asha' as Role, label: 'ASHA Worker', icon: Users, color: 'blue' },
     { id: 'admin' as Role, label: 'Admin', icon: Shield, color: 'purple' },
   ];
 
@@ -74,7 +73,7 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Login as
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {roles.map((role) => {
                 const Icon = role.icon;
                 const isSelected = selectedRole === role.id;
@@ -119,9 +118,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder={
-                  selectedRole === 'doctor' ? 'doctor@example.com' :
-                  selectedRole === 'asha' ? 'asha@example.com' :
-                  'admin@example.com'
+                  selectedRole === 'doctor' ? 'doctor@example.com' : 'admin@example.com'
                 }
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
