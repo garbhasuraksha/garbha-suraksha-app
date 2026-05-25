@@ -281,9 +281,18 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-lg font-bold text-gray-900">Registered Doctors ({doctors.length})</h2>
-              <Link href="/dashboard/doctors/new" className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all flex items-center gap-2">
-                <Plus className="w-5 h-5" />Add Doctor
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href="/dashboard/doctors/verify"
+                  className="bg-blue-100 text-blue-700 px-6 py-2 rounded-lg hover:bg-blue-200 transition-all flex items-center gap-2 font-medium"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Verify Applications
+                </Link>
+                <Link href="/dashboard/doctors/new" className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-6 py-2 rounded-lg hover:from-pink-600 hover:to-pink-700 transition-all flex items-center gap-2">
+                  <Plus className="w-5 h-5" />Add Doctor
+                </Link>
+              </div>
             </div>
             {doctors.length === 0 ? (
               <div className="p-12 text-center text-gray-500">
