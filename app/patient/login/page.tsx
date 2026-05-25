@@ -152,6 +152,7 @@ export default function PatientLoginPage() {
                 )}
               </button>
             </form>
+            </>
           ) : (
             <form onSubmit={handleVerifyOTP} className="space-y-5">
               <div>
